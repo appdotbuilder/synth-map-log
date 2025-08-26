@@ -1,17 +1,26 @@
+import { db } from '../db';
+import { logEntriesTable } from '../db/schema';
 import { type CreateLogEntryInput, type LogEntry } from '../schema';
 
-export async function createLogEntry(input: CreateLogEntryInput): Promise<LogEntry> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new log entry and persisting it in the database.
-    // This will be used to add fabricated log entries for the real-time server log display.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
-        timestamp: new Date(), // Current timestamp for the log entry
+export const createLogEntry = async (input: CreateLogEntryInput): Promise<LogEntry> => {
+  try {
+    // Insert log entry record with current timestamp
+    const result = await db.insert(logEntriesTable)
+      .values({
+        timestamp: new Date(), // Set current timestamp for when the log entry occurred
         severity: input.severity,
         source: input.source,
         message: input.message,
         ip_address: input.ip_address,
-        user_agent: input.user_agent,
-        created_at: new Date() // Placeholder date
-    } as LogEntry);
-}
+        user_agent: input.user_agent
+      })
+      .returning()
+      .execute();
+
+    const logEntry = result[0];
+    return logEntry;
+  } catch (error) {
+    console.error('Log entry creation failed:', error);
+    throw error;
+  }
+};

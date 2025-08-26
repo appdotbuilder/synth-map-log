@@ -1,11 +1,12 @@
+import { db } from '../db';
+import { networkActivitiesTable } from '../db/schema';
 import { type CreateNetworkActivityInput, type NetworkActivity } from '../schema';
 
-export async function createNetworkActivity(input: CreateNetworkActivityInput): Promise<NetworkActivity> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is creating a new network activity data point and persisting it in the database.
-    // This will be used to generate dummy data points for the interactive world map display.
-    return Promise.resolve({
-        id: 0, // Placeholder ID
+export const createNetworkActivity = async (input: CreateNetworkActivityInput): Promise<NetworkActivity> => {
+  try {
+    // Insert network activity record
+    const result = await db.insert(networkActivitiesTable)
+      .values({
         latitude: input.latitude,
         longitude: input.longitude,
         activity_type: input.activity_type,
@@ -17,7 +18,23 @@ export async function createNetworkActivity(input: CreateNetworkActivityInput): 
         city: input.city,
         severity: input.severity,
         timestamp: new Date(), // Current timestamp for the activity
-        metadata: input.metadata,
-        created_at: new Date() // Placeholder date
-    } as NetworkActivity);
-}
+        metadata: input.metadata
+      })
+      .returning()
+      .execute();
+
+    // Return the created network activity
+    const networkActivity = result[0];
+    return {
+      ...networkActivity,
+      // Ensure numeric fields are properly typed
+      latitude: Number(networkActivity.latitude),
+      longitude: Number(networkActivity.longitude),
+      // Ensure metadata is properly typed
+      metadata: networkActivity.metadata as Record<string, any> | null
+    };
+  } catch (error) {
+    console.error('Network activity creation failed:', error);
+    throw error;
+  }
+};
